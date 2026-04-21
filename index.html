@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>归井棋</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 10px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .game-container {
+            flex: 1;
+        }
+        
+        .info-panel {
+            width: 100%;
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .game-title {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.5rem;
+        }
+        
+        canvas {
+            display: block;
+            background-color: #f0f0f0;
+            border: 2px solid #888;
+            border-radius: 5px;
+            cursor: pointer;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .status-section {
+            margin-bottom: 20px;
+        }
+        
+        .status-section h3 {
+            color: #333;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 5px;
+            font-size: 1.1rem;
+        }
+        
+        .player-info {
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .player-info.black {
+            background-color: #e6f3ff;
+            border: 2px solid #1d8eff;
+        }
+        
+        .player-info.white {
+            background-color: #fff8e6;
+            border: 2px solid #ffcc00;
+        }
+        
+        .player-info.ai {
+            background-color: #e6ffe6;
+            border: 2px solid #28a745;
+        }
+        
+        .region-info {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #fc5059;
+            font-size: 14px;
+        }
+        
+        .stats {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        
+        .stat-label {
+            color: #666;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+        }
+        
+        .black-stat {
+            color: #1d8eff;
+        }
+        
+        .white-stat {
+            color: #ffcc00;
+        }
+        
+        .both-stat {
+            color: #b011ff;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #4a6ee0;
+            border-radius: 5px;
+            background-color: white;
+            color: #4a6ee0;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .mode-btn.active {
+            background-color: #4a6ee0;
+            color: white;
+        }
+        
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4a6ee0;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover:not(:disabled) {
+            background-color: #3a5ed0;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        button.secondary {
+            background-color: #6c757d;
+        }
+        
+        button.secondary:hover:not(:disabled) {
+            background-color: #5a6268;
+        }
+        
+        button.warning {
+            background-color: #e74c3c;
+        }
+        
+        button.warning:hover:not(:disabled) {
+            background-color: #c0392b;
+        }
+        
+        button.success {
+            background-color: #28a745;
+        }
+        
+        button.success:hover:not(:disabled) {
+            background-color: #218838;
+        }
+        
+        .coordinate-display {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            text-align: center;
+            color: #666;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .ai-thinking {
+            display: none;
+            text-align: center;
+            padding: 10px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .rules-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .rules-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .rules-content h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.3rem;
+        }
+        
+        .rules-content ol {
+            padding-left: 20px;
+        }
+        
+        .rules-content li {
+            margin-bottom: 12px;
+            line-height: 1.6;
+            font-size: 0.9rem;
+        }
+        
+        .rules-content ul {
+            padding-left: 20px;
+            margin-top: 5px;
+        }
+        
+        .rules-content ul li {
+            margin-bottom: 5px;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .game-over {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 25px 35px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            z-index: 999;
+            display: none;
+            width: 90%;
+            max-width: 400px;
+        }
+        
+        .game-over h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+        
+        .restart-btn {
+            background-color: #28a745;
+            margin-top: 20px;
+        }
+        
+        .restart-btn:hover:not(:disabled) {
+            background-color: #218838;
+        }
+        
+        /* 响应式设计 */
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+                gap: 20px;
+            }
+            
+            .info-panel {
+                width: 300px;
+                padding: 20px;
+            }
+            
+            .game-title {
+                font-size: 1.8rem;
+                margin-bottom: 20px;
+            }
+            
+            .player-info {
+                font-size: 18px;
+                margin-bottom: 20px;
+            }
+            
+            canvas {
+                max-width: 600px;
+                max-height: 600px;
+            }
+            
+            .rules-content {
+                padding: 30px;
+                max-width: 600px;
+            }
+            
+            .rules-content h2 {
+                font-size: 1.5rem;
+            }
+            
+            .rules-content li {
+                font-size: 1rem;
+            }
+            
+            .game-over {
+                padding: 30px 50px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .game-title {
+                font-size: 1.2rem;
+            }
+            
+            .player-info {
+                font-size: 14px;
+                padding: 8px;
+            }
+            
+            .region-info {
+                font-size: 12px;
+                padding: 8px;
+            }
+            
+            button {
+                padding: 10px;
+                font-size: 14px;
+            }
+            
+            .mode-btn {
+                padding: 8px;
+                font-size: 12px;
+            }
+            
+            .stat-item {
+                font-size: 12px;
+            }
+            
+            .coordinate-display {
+                font-size: 10px;
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="game-container">
+            <h1 class="game-title">归井棋</h1>
+            <canvas id="gameCanvas" width="600" height="600"></canvas>
+        </div>
+        
+        <div class="info-panel">
+            <div class="mode-selector">
+                <button class="mode-btn active" id="pvpMode">玩家对战</button>
+                <button class="mode-btn" id="pvaiMode">人机对战</button>
+            </div>
+            
+            <div class="player-info black" id="playerInfo">
+                当前玩家: 黑棋 ●
+            </div>
+            
+            <div class="ai-thinking" id="aiThinking">
+                AI正在思考...
+            </div>
+            
+            <div class="region-info" id="regionInfo">
+                可落子区域: 全盘
+            </div>
+            
+            <div class="status-section">
+                <h3>占领状态</h3>
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">大九宫格:</span>
+                        <span class="stat-value">
+                            <span class="black-stat" id="largeBlack">0</span>/
+                            <span class="white-stat" id="largeWhite">0</span>/
+                            <span class="both-stat" id="largeBoth">0</span>
+                        </span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">中九宫格:</span>
+                        <span class="stat-value">
+                            <span class="black-stat" id="mediumBlack">0</span>/
+                            <span class="white-stat" id="mediumWhite">0</span>/
+                            <span class="both-stat" id="mediumBoth">0</span>
+                        </span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">小九宫格:</span>
+                        <span class="stat-value">
+                            <span class="black-stat" id="smallBlack">0</span>/
+                            <span class="white-stat" id="smallWhite">0</span>/
+                            <span class="both-stat" id="smallBoth">0</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="restartBtn">重新开始</button>
+                <button id="undoBtn" class="warning" disabled>悔棋</button>
+                <button id="toggleCoordsBtn" class="secondary">显示坐标</button>
+                <button id="rulesBtn" class="secondary">游戏规则</button>
+            </div>
+            
+            <div class="coordinate-display" id="coordinateDisplay">
+                触摸或悬停显示坐标
+            </div>
+        </div>
+    </div>
+    
+    <div class="game-over" id="gameOverModal">
+        <h2 id="winnerText">黑棋获胜！</h2>
+        <button class="restart-btn" id="restartGameBtn">重新开始游戏</button>
+    </div>
+    
+    <div class="rules-modal" id="rulesModal">
+        <div class="rules-content">
+            <button class="close-btn" id="closeRulesBtn">×</button>
+            <h2>游戏规则</h2>
+            <ol>
+                <li>
+                    <strong>棋盘结构：</strong>
+                    <ul>
+                        <li>27×27的大棋盘，分为3层九宫格嵌套</li>
+                        <li>大层：3×3个大九宫格，每个9×9</li>
+                        <li>中层：每个大九宫格内3×3个中九宫格，每个3×3</li>
+                        <li>小层：每个中九宫格内3×3个小格子，每个1×1</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>落子规则：</strong>
+                    <ul>
+                        <li>黑棋先行，第一步可在全盘任意位置落子</li>
+                        <li>之后每一步必须落在上一步指定的小九宫格内</li>
+                        <li>指定方法：上一步坐标为(p,q)-(m,n)-(i,j)<br>
+                            下一步必须落在(m,n)-(i,j)-(x,y)的位置</li>
+                        <li>如果指定的小九宫格已满，可在对应的中九宫格内任意落子</li>
+                        <li>如果中九宫格也已满，可在全盘任意位置落子</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>占领规则：</strong>
+                    <ul>
+                        <li>在3×3小九宫格内三连（横、竖、斜），则占领该小九宫格</li>
+                        <li>占领的3×3小九宫格在中九宫格内三连，则占领该中九宫格</li>
+                        <li>占领的中九宫格在大九宫格内三连，则获胜</li>
+                        <li>同一区域可被双方同时占领</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>胜利条件：</strong>
+                    <ul>
+                        <li>在3×3的大九宫格层面形成三连的一方获胜</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        class RecursiveTicTacToe {
+            constructor() {
+                // 游戏常量
+                this.BOARD_SIZE = 27;
+                this.LARGE_GRID = 3;
+                this.MEDIUM_GRID = 3;
+                this.SMALL_GRID = 3;
+                
+                // 颜色定义
+                this.COLORS = {
+                    'bg': '#f0f0f0',
+                    'grid_line': '#888888',
+                    'large_grid': '#000000',
+                    'medium_grid': '#666666',
+                    'small_grid': '#cccccc',
+                    'black_piece': 'black',
+                    'white_piece': 'white',
+                    'black_own': "#1d8eff",
+                    'white_own': "#ffcc00",
+                    'both_own': "#b011ff",
+                    'highlight': "#fc5059",
+                    'text': 'black'
+                };
+                
+                // 游戏状态
+                this.board = this.createBoard();
+                this.small_owner = this.createSmallOwnerBoard();
+                this.medium_owner = this.createMediumOwnerBoard();
+                this.large_owner = this.createLargeOwnerBoard();
+                
+                this.current_player = 1;  // 1:黑棋, 2:白棋
+                this.last_move = null;
+                this.game_over = false;
+                this.show_coords = false;
+                this.game_mode = 'pvp';  // 'pvp' 或 'pvai'
+                this.ai_thinking = false;
+                this.ai_player = 2;  // AI执白棋
+                
+                // 悔棋历史记录
+                this.move_history = [];
+                
+                // DOM元素
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.playerInfo = document.getElementById('playerInfo');
+                this.regionInfo = document.getElementById('regionInfo');
+                this.coordinateDisplay = document.getElementById('coordinateDisplay');
+                this.aiThinking = document.getElementById('aiThinking');
+                this.undoBtn = document.getElementById('undoBtn');
+                
+                // 统计元素
+                this.largeBlack = document.getElementById('largeBlack');
+                this.largeWhite = document.getElementById('largeWhite');
+                this.largeBoth = document.getElementById('largeBoth');
+                this.mediumBlack = document.getElementById('mediumBlack');
+                this.mediumWhite = document.getElementById('mediumWhite');
+                this.mediumBoth = document.getElementById('mediumBoth');
+                this.smallBlack = document.getElementById('smallBlack');
+                this.smallWhite = document.getElementById('smallWhite');
+                this.smallBoth = document.getElementById('smallBoth');
+                
+                // 初始化
+                this.updateCanvasSize();
+                this.initEventListeners();
+                this.drawBoard();
+                this.updateStatusInfo();
+                this.updatePlayerInfo();
+                this.updateUndoButtonState();
+            }
+            
+            createBoard() {
+                return Array(this.BOARD_SIZE).fill().map(() => Array(this.BOARD_SIZE).fill(0));
+            }
+            
+            createSmallOwnerBoard() {
+                return Array(this.LARGE_GRID * this.LARGE_GRID).fill().map(() =>
+                    Array(this.MEDIUM_GRID).fill().map(() => Array(this.MEDIUM_GRID).fill(0))
+                );
+            }
+            
+            createMediumOwnerBoard() {
+                return Array(this.LARGE_GRID).fill().map(() => Array(this.LARGE_GRID).fill(0));
+            }
+            
+            createLargeOwnerBoard() {
+                return Array(this.LARGE_GRID).fill().map(() => Array(this.LARGE_GRID).fill(0));
+            }
+            
+            initEventListeners() {
+                // 画布点击事件
+                this.canvas.addEventListener('click', (e) => this.onCanvasClick(e));
+                
+                // 触摸事件
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const rect = this.canvas.getBoundingClientRect();
+                    const scaleX = this.canvas.width / rect.width;
+                    const scaleY = this.canvas.height / rect.height;
+                    const x = (touch.clientX - rect.left) * scaleX;
+                    const y = (touch.clientY - rect.top) * scaleY;
+                    
+                    const col = Math.floor(x / this.cell_size);
+                    const row = Math.floor(y / this.cell_size);
+                    
+                    if (row >= 0 && row < this.BOARD_SIZE && col >= 0 && col < this.BOARD_SIZE) {
+                        const [lg_r, lg_c, mg_r, mg_c, sg_r, sg_c] = this.getNestedCoords(row, col);
+                        if (this.isValidMove(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c)) {
+                            this.makeMove(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c);
+                        }
+                    }
+                }, { passive: false });
+                
+                // 鼠标移动事件
+                this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (e.touches.length === 1) {
+                        const touch = e.touches[0];
+                        const rect = this.canvas.getBoundingClientRect();
+                        const scaleX = this.canvas.width / rect.width;
+                        const scaleY = this.canvas.height / rect.height;
+                        const x = (touch.clientX - rect.left) * scaleX;
+                        const y = (touch.clientY - rect.top) * scaleY;
+                        
+                        const col = Math.floor(x / this.cell_size);
+                        const row = Math.floor(y / this.cell_size);
+                        
+                        if (row >= 0 && row < this.BOARD_SIZE && col >= 0 && col < this.BOARD_SIZE) {
+                            const [lg_r, lg_c, mg_r, mg_c, sg_r, sg_c] = this.getNestedCoords(row, col);
+                            this.coordinateDisplay.textContent = 
+                                `坐标: (${lg_r+1},${lg_c+1})-(${mg_r+1},${mg_c+1})-(${sg_r+1},${sg_c+1})`;
+                        } else {
+                            this.coordinateDisplay.textContent = "触摸或悬停显示坐标";
+                        }
+                    }
+                }, { passive: false });
+                
+                // 按钮事件
+                document.getElementById('restartBtn').addEventListener('click', () => this.resetGame());
+                document.getElementById('undoBtn').addEventListener('click', () => this.undoMove());
+                document.getElementById('toggleCoordsBtn').addEventListener('click', () => this.toggleCoords());
+                document.getElementById('rulesBtn').addEventListener('click', () => this.showRules());
+                document.getElementById('closeRulesBtn').addEventListener('click', () => this.hideRules());
+                document.getElementById('restartGameBtn').addEventListener('click', () => this.resetGame());
+                
+                // 游戏模式切换
+                document.getElementById('pvpMode').addEventListener('click', () => this.setGameMode('pvp'));
+                document.getElementById('pvaiMode').addEventListener('click', () => this.setGameMode('pvai'));
+                
+                // 规则模态框点击外部关闭
+                document.getElementById('rulesModal').addEventListener('click', (e) => {
+                    if (e.target.id === 'rulesModal') this.hideRules();
+                });
+                
+                // 窗口大小变化事件
+                window.addEventListener('resize', () => this.updateCanvasSize());
+            }
+            
+            updateCanvasSize() {
+                const container = document.querySelector('.game-container');
+                const containerWidth = container.clientWidth;
+                const maxSize = Math.min(containerWidth, 600);
+                this.canvas.width = maxSize;
+                this.canvas.height = maxSize;
+                this.cell_size = maxSize / this.BOARD_SIZE;
+                this.drawBoard();
+            }
+            
+            setGameMode(mode) {
+                this.game_mode = mode;
+                
+                // 更新按钮状态
+                const pvpBtn = document.getElementById('pvpMode');
+                const pvaiBtn = document.getElementById('pvaiMode');
+                pvpBtn.classList.toggle('active', mode === 'pvp');
+                pvaiBtn.classList.toggle('active', mode === 'pvai');
+                
+                // 更新悔棋按钮状态
+                this.updateUndoButtonState();
+                
+                // 重新开始游戏
+                this.resetGame();
+                
+                // 如果切换为人机对战且AI执黑，让AI先走
+                if (mode === 'pvai' && this.ai_player === 1 && !this.game_over) {
+                    this.showToast("AI执黑先行");
+                    setTimeout(() => this.aiMakeMove(), 500);
+                }
+            }
+            
+            updateUndoButtonState() {
+                // 在人机对战模式下禁用悔棋按钮
+                if (this.game_mode === 'pvai') {
+                    this.undoBtn.disabled = true;
+                    this.undoBtn.title = "人机对战模式下无法悔棋";
+                } else {
+                    this.undoBtn.disabled = this.move_history.length === 0;
+                    this.undoBtn.title = this.move_history.length === 0 ? "没有可悔棋的步骤" : "悔棋";
+                }
+            }
+            
+            drawBoard() {
+                this.ctx.fillStyle = this.COLORS.bg;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制大九宫格的占领状态
+                for (let lg_r = 0; lg_r < this.LARGE_GRID; lg_r++) {
+                    for (let lg_c = 0; lg_c < this.LARGE_GRID; lg_c++) {
+                        const owner = this.large_owner[lg_r][lg_c];
+                        if (owner !== 0) {
+                            const x1 = lg_c * 9 * this.cell_size;
+                            const y1 = lg_r * 9 * this.cell_size;
+                            const x2 = x1 + 9 * this.cell_size;
+                            const y2 = y1 + 9 * this.cell_size;
+                            
+                            this.ctx.fillStyle = this.getOwnershipColor(owner);
+                            this.ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+                        }
+                    }
+                }
+                
+                // 绘制大九宫格线
+                this.ctx.strokeStyle = this.COLORS.large_grid;
+                this.ctx.lineWidth = 3;
+                for (let i = 0; i <= this.LARGE_GRID; i++) {
+                    const x = i * 9 * this.cell_size;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvas.height);
+                    this.ctx.stroke();
+                    
+                    const y = i * 9 * this.cell_size;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(this.canvas.width, y);
+                    this.ctx.stroke();
+                }
+                
+                // 绘制中九宫格线
+                this.ctx.strokeStyle = this.COLORS.medium_grid;
+                this.ctx.lineWidth = 2;
+                for (let i = 0; i <= this.LARGE_GRID * this.MEDIUM_GRID; i++) {
+                    const x = i * 3 * this.cell_size;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvas.height);
+                    this.ctx.stroke();
+                    
+                    const y = i * 3 * this.cell_size;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(this.canvas.width, y);
+                    this.ctx.stroke();
+                }
+                
+                // 绘制小九宫格线
+                this.ctx.strokeStyle = this.COLORS.small_grid;
+                this.ctx.lineWidth = 1;
+                for (let i = 0; i <= this.BOARD_SIZE; i++) {
+                    const x = i * this.cell_size;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvas.height);
+                    this.ctx.stroke();
+                    
+                    const y = i * this.cell_size;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(this.canvas.width, y);
+                    this.ctx.stroke();
+                }
+                
+                // 绘制棋子
+                for (let r = 0; r < this.BOARD_SIZE; r++) {
+                    for (let c = 0; c < this.BOARD_SIZE; c++) {
+                        if (this.board[r][c] !== 0) {
+                            const x1 = c * this.cell_size + 2;
+                            const y1 = r * this.cell_size + 2;
+                            const x2 = (c + 1) * this.cell_size - 2;
+                            const y2 = (r + 1) * this.cell_size - 2;
+                            const centerX = (x1 + x2) / 2;
+                            const centerY = (y1 + y2) / 2;
+                            const radius = (x2 - x1) / 2;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                            
+                            if (this.board[r][c] === 1) {  // 黑棋
+                                this.ctx.fillStyle = this.COLORS.black_piece;
+                            } else {  // 白棋
+                                this.ctx.fillStyle = this.COLORS.white_piece;
+                                this.ctx.strokeStyle = 'black';
+                                this.ctx.lineWidth = 1;
+                                this.ctx.stroke();
+                            }
+                            this.ctx.fill();
+                        }
+                    }
+                }
+                
+                // 绘制坐标
+                if (this.show_coords) {
+                    this.ctx.fillStyle = 'gray';
+                    this.ctx.font = `${Math.max(this.cell_size * 0.2, 4)}px Arial`;
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    
+                    for (let r = 0; r < this.BOARD_SIZE; r++) {
+                        for (let c = 0; c < this.BOARD_SIZE; c++) {
+                            const [lg_r, lg_c, mg_r, mg_c, sg_r, sg_c] = this.getNestedCoords(r, c);
+                            const coordText = `(${lg_r+1},${lg_c+1})-(${mg_r+1},${mg_c+1})-(${sg_r+1},${sg_c+1})`;
+                            const x = c * this.cell_size + this.cell_size / 2;
+                            const y = r * this.cell_size + this.cell_size / 2;
+                            this.ctx.fillText(coordText, x, y);
+                        }
+                    }
+                }
+                
+                // 高亮当前可落子区域
+                this.highlightValidMoves();
+            }
+            
+            getOwnershipColor(owner) {
+                switch(owner) {
+                    case 1: return this.COLORS.black_own;
+                    case 2: return this.COLORS.white_own;
+                    case 3: return this.COLORS.both_own;
+                    default: return this.COLORS.bg;
+                }
+            }
+            
+            highlightValidMoves() {
+                if (this.last_move === null) return;
+                
+                const [lg_p, lg_q, mg_m, mg_n, sg_i, sg_j] = this.last_move;
+                const lg_r = mg_m;
+                const lg_c = mg_n;
+                const mg_r = sg_i;
+                const mg_c = sg_j;
+                
+                // 高亮大九宫格
+                this.ctx.strokeStyle = this.COLORS.highlight;
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                const x1_lg = lg_c * 9 * this.cell_size;
+                const y1_lg = lg_r * 9 * this.cell_size;
+                const x2_lg = x1_lg + 9 * this.cell_size;
+                const y2_lg = y1_lg + 9 * this.cell_size;
+                this.ctx.rect(x1_lg, y1_lg, x2_lg - x1_lg, y2_lg - y1_lg);
+                this.ctx.stroke();
+                
+                // 高亮中九宫格
+                this.ctx.lineWidth = 2;
+                this.ctx.beginPath();
+                const x1_mg = lg_c * 9 * this.cell_size + mg_c * 3 * this.cell_size;
+                const y1_mg = lg_r * 9 * this.cell_size + mg_r * 3 * this.cell_size;
+                const x2_mg = x1_mg + 3 * this.cell_size;
+                const y2_mg = y1_mg + 3 * this.cell_size;
+                this.ctx.rect(x1_mg, y1_mg, x2_mg - x1_mg, y2_mg - y1_mg);
+                this.ctx.stroke();
+            }
+            
+            getNestedCoords(row, col) {
+                const lg_r = Math.floor(row / 9);
+                const lg_c = Math.floor(col / 9);
+                const mg_r = Math.floor((row % 9) / 3);
+                const mg_c = Math.floor((col % 9) / 3);
+                const sg_r = row % 3;
+                const sg_c = col % 3;
+                return [lg_r, lg_c, mg_r, mg_c, sg_r, sg_c];
+            }
+            
+            getGlobalCoords(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c) {
+                const row = lg_r * 9 + mg_r * 3 + sg_r;
+                const col = lg_c * 9 + mg_c * 3 + sg_c;
+                return [row, col];
+            }
+            
+            onCanvasClick(event) {
+                if (this.game_over || this.ai_thinking) return;
+                
+                // 人机对战模式下，如果是AI的回合，不允许玩家操作
+                if (this.game_mode === 'pvai' && this.current_player === this.ai_player) {
+                    return;
+                }
+                
+                const rect = this.canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                
+                const col = Math.floor(x / this.cell_size);
+                const row = Math.floor(y / this.cell_size);
+                
+                if (row >= 0 && row < this.BOARD_SIZE && col >= 0 && col < this.BOARD_SIZE) {
+                    const [lg_r, lg_c, mg_r, mg_c, sg_r, sg_c] = this.getNestedCoords(row, col);
+                    
+                    if (this.isValidMove(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c)) {
+                        this.makeMove(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c);
+                    }
+                }
+            }
+            
+            isValidMove(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c) {
+                const [row, col] = this.getGlobalCoords(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c);
+                
+                if (this.board[row][col] !== 0) {
+                    return false;
+                }
+                
+                if (this.last_move === null) {
+                    return true;
+                }
+                
+                const [prev_lg_r, prev_lg_c, prev_mg_r, prev_mg_c, prev_sg_r, prev_sg_c] = this.last_move;
+                const target_lg_r = prev_mg_r;
+                const target_lg_c = prev_mg_c;
+                const target_mg_r = prev_sg_r;
+                const target_mg_c = prev_sg_c;
+                
+                if (lg_r !== target_lg_r || lg_c !== target_lg_c) {
+                    if (!this.isMediumGridFull(target_lg_r, target_lg_c, target_mg_r, target_mg_c)) {
+                        return false;
+                    }
+                }
+                
+                if (mg_r !== target_mg_r || mg_c !== target_mg_c) {
+                    if (!this.isSmallGridFull(target_lg_r, target_lg_c, target_mg_r, target_mg_c, prev_sg_r, prev_sg_c)) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            }
+            
+            isSmallGridFull(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c) {
+                const start_row = lg_r * 9 + mg_r * 3;
+                const start_col = lg_c * 9 + mg_c * 3;
+                
+                for (let r = 0; r < 3; r++) {
+                    for (let c = 0; c < 3; c++) {
+                        if (this.board[start_row + r][start_col + c] === 0) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+            
+            isMediumGridFull(lg_r, lg_c, mg_r, mg_c) {
+                const start_row = lg_r * 9 + mg_r * 3;
+                const start_col = lg_c * 9 + mg_c * 3;
+                
+                for (let r = 0; r < 3; r++) {
+                    for (let c = 0; c < 3; c++) {
+                        let small_full = true;
+                        for (let sr = 0; sr < 3; sr++) {
+                            for (let sc = 0; sc < 3; sc++) {
+                                if (this.board[start_row + r * 3 + sr][start_col + c * 3 + sc] === 0) {
+                                    small_full = false;
+                                    break;
+                                }
+                            }
+                            if (!small_full) break;
+                        }
+                        if (!small_full) return false;
+                    }
+                }
+                return true;
+            }
+            
+            saveCurrentState() {
+                if (this.game_over) return;
+                
+                // 保存当前状态
+                const state = {
+                    board: JSON.parse(JSON.stringify(this.board)),
+                    small_owner: JSON.parse(JSON.stringify(this.small_owner)),
+                    medium_owner: JSON.parse(JSON.stringify(this.medium_owner)),
+                    large_owner: JSON.parse(JSON.stringify(this.large_owner)),
+                    current_player: this.current_player,
+                    last_move: this.last_move ? [...this.last_move] : null
+                };
+                
+                this.move_history.push(state);
+                
+                // 限制历史记录长度，防止内存占用过大
+                if (this.move_history.length > 50) {
+                    this.move_history.shift();
+                }
+                
+                // 更新悔棋按钮状态
+                this.updateUndoButtonState();
+            }
+            
+            makeMove(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c) {
+                // 保存当前状态到历史记录
+                this.saveCurrentState();
+                
+                const [row, col] = this.getGlobalCoords(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c);
+                this.board[row][col] = this.current_player;
+                this.last_move = [lg_r, lg_c, mg_r, mg_c, sg_r, sg_c];
+                this.updateOwnership(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c);
+                
+                if (this.checkVictory()) {
+                    const winner = this.current_player === 1 ? "黑棋" : "白棋";
+                    this.showGameOver(`${winner}获胜！`);
+                } else {
+                    this.current_player = 3 - this.current_player;
+                    this.updatePlayerInfo();
+                    this.drawBoard();
+                    this.updateStatusInfo();
+                    
+                    // 人机对战模式下，如果是AI的回合，让AI走棋
+                    if (this.game_mode === 'pvai' && this.current_player === this.ai_player && !this.game_over) {
+                        setTimeout(() => this.aiMakeMove(), 500);
+                    }
+                }
+            }
+            
+            aiMakeMove() {
+                if (this.game_over || this.ai_thinking) return;
+                
+                this.ai_thinking = true;
+                this.aiThinking.style.display = 'block';
+                
+                // 模拟AI思考时间
+                setTimeout(() => {
+                    this.ai_thinking = false;
+                    this.aiThinking.style.display = 'none';
+                    
+                    const move = this.getAIMove();
+                    if (move) {
+                        const [lg_r, lg_c, mg_r, mg_c, sg_r, sg_c] = move;
+                        this.makeMove(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c);
+                    }
+                }, 800 + Math.random() * 1000); // 随机思考时间800-1800ms
+            }
+            
+            getAIMove() {
+                // 获取所有合法走法
+                const validMoves = this.getAllValidMoves();
+                if (validMoves.length === 0) return null;
+                
+                // 1. 优先找能够立即获胜的走法
+                for (const move of validMoves) {
+                    if (this.isWinningMove(move, this.ai_player)) {
+                        return move;
+                    }
+                }
+                
+                // 2. 防止对手立即获胜
+                for (const move of validMoves) {
+                    if (this.isWinningMove(move, 3 - this.ai_player)) {
+                        return move;
+                    }
+                }
+                
+                // 3. 优先占据战略要地（中心、角落）
+                const strategicMoves = this.getStrategicMoves(validMoves);
+                if (strategicMoves.length > 0) {
+                    return strategicMoves[Math.floor(Math.random() * strategicMoves.length)];
+                }
+                
+                // 4. 随机选择一个走法
+                return validMoves[Math.floor(Math.random() * validMoves.length)];
+            }
+            
+            getAllValidMoves() {
+                const moves = [];
+                
+                // 如果没有上一步，可以在全盘任意位置落子
+                if (this.last_move === null) {
+                    for (let lg_r = 0; lg_r < this.LARGE_GRID; lg_r++) {
+                        for (let lg_c = 0; lg_c < this.LARGE_GRID; lg_c++) {
+                            for (let mg_r = 0; mg_r < this.MEDIUM_GRID; mg_r++) {
+                                for (let mg_c = 0; mg_c < this.MEDIUM_GRID; mg_c++) {
+                                    for (let sg_r = 0; sg_r < this.SMALL_GRID; sg_r++) {
+                                        for (let sg_c = 0; sg_c < this.SMALL_GRID; sg_c++) {
+                                            if (this.isValidMove(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c)) {
+                                                moves.push([lg_r, lg_c, mg_r, mg_c, sg_r, sg_c]);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    const [prev_lg_r, prev_lg_c, prev_mg_r, prev_mg_c, prev_sg_r, prev_sg_c] = this.last_move;
+                    
+                    // 首先尝试指定的九宫格
+                    const target_lg_r = prev_mg_r;
+                    const target_lg_c = prev_mg_c;
+                    const target_mg_r = prev_sg_r;
+                    const target_mg_c = prev_sg_c;
+                    
+                    for (let sg_r = 0; sg_r < this.SMALL_GRID; sg_r++) {
+                        for (let sg_c = 0; sg_c < this.SMALL_GRID; sg_c++) {
+                            if (this.isValidMove(target_lg_r, target_lg_c, target_mg_r, target_mg_c, sg_r, sg_c)) {
+                                moves.push([target_lg_r, target_lg_c, target_mg_r, target_mg_c, sg_r, sg_c]);
+                            }
+                        }
+                    }
+                    
+                    // 如果指定九宫格已满，检查整个中九宫格
+                    if (moves.length === 0) {
+                        for (let mg_r = 0; mg_r < this.MEDIUM_GRID; mg_r++) {
+                            for (let mg_c = 0; mg_c < this.MEDIUM_GRID; mg_c++) {
+                                for (let sg_r = 0; sg_r < this.SMALL_GRID; sg_r++) {
+                                    for (let sg_c = 0; sg_c < this.SMALL_GRID; sg_c++) {
+                                        if (this.isValidMove(target_lg_r, target_lg_c, mg_r, mg_c, sg_r, sg_c)) {
+                                            moves.push([target_lg_r, target_lg_c, mg_r, mg_c, sg_r, sg_c]);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 如果整个中九宫格也满，可以在全盘任意位置
+                    if (moves.length === 0) {
+                        for (let lg_r = 0; lg_r < this.LARGE_GRID; lg_r++) {
+                            for (let lg_c = 0; lg_c < this.LARGE_GRID; lg_c++) {
+                                for (let mg_r = 0; mg_r < this.MEDIUM_GRID; mg_r++) {
+                                    for (let mg_c = 0; mg_c < this.MEDIUM_GRID; mg_c++) {
+                                        for (let sg_r = 0; sg_r < this.SMALL_GRID; sg_r++) {
+                                            for (let sg_c = 0; sg_c < this.SMALL_GRID; sg_c++) {
+                                                if (this.isValidMove(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c)) {
+                                                    moves.push([lg_r, lg_c, mg_r, mg_c, sg_r, sg_c]);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                return moves;
+            }
+            
+            isWinningMove(move, player) {
+                const [lg_r, lg_c, mg_r, mg_c, sg_r, sg_c] = move;
+                const [row, col] = this.getGlobalCoords(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c);
+                
+                // 模拟走子
+                this.board[row][col] = player;
+                this.updateOwnership(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c);
+                
+                const isWin = this.checkVictory() === player;
+                
+                // 撤销模拟
+                this.board[row][col] = 0;
+                this.undoMove(); // 回退到之前的状态
+                
+                return isWin;
+            }
+            
+            getStrategicMoves(validMoves) {
+                const strategicMoves = [];
+                
+                for (const move of validMoves) {
+                    const [lg_r, lg_c, mg_r, mg_c, sg_r, sg_c] = move;
+                    
+                    // 1. 优先选择小九宫格的中央
+                    if (sg_r === 1 && sg_c === 1) {
+                        strategicMoves.push(move);
+                    }
+                    // 2. 其次选择中九宫格的中央
+                    else if (mg_r === 1 && mg_c === 1) {
+                        strategicMoves.push(move);
+                    }
+                    // 3. 再选择大九宫格的中央
+                    else if (lg_r === 1 && lg_c === 1) {
+                        strategicMoves.push(move);
+                    }
+                    // 4. 选择角落位置
+                    else if ((sg_r === 0 || sg_r === 2) && (sg_c === 0 || sg_c === 2)) {
+                        strategicMoves.push(move);
+                    }
+                }
+                
+                return strategicMoves.length > 0 ? strategicMoves : validMoves;
+            }
+            
+            undoMove() {
+                // 人机对战模式下禁止悔棋
+                if (this.game_mode === 'pvai') {
+                    this.showToast("人机对战模式下无法悔棋");
+                    return;
+                }
+                
+                if (this.game_over) {
+                    // 如果游戏已结束，先关闭结束弹窗
+                    document.getElementById('gameOverModal').style.display = 'none';
+                    this.game_over = false;
+                }
+                
+                if (this.move_history.length === 0) {
+                    // 没有历史记录，不能悔棋
+                    this.showToast("无法悔棋，已回到初始状态");
+                    return;
+                }
+                
+                // 获取上一个状态
+                const prevState = this.move_history.pop();
+                
+                // 恢复状态
+                this.board = prevState.board;
+                this.small_owner = prevState.small_owner;
+                this.medium_owner = prevState.medium_owner;
+                this.large_owner = prevState.large_owner;
+                this.current_player = prevState.current_player;
+                this.last_move = prevState.last_move;
+                
+                // 更新UI
+                this.updatePlayerInfo();
+                this.drawBoard();
+                this.updateStatusInfo();
+                this.updateUndoButtonState();
+                
+                this.showToast("悔棋成功");
+            }
+            
+            showToast(message) {
+                // 创建一个提示元素
+                const toast = document.createElement('div');
+                toast.textContent = message;
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background-color: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    z-index: 1001;
+                    font-size: 14px;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                `;
+                
+                document.body.appendChild(toast);
+                
+                // 显示提示
+                setTimeout(() => {
+                    toast.style.opacity = '1';
+                }, 10);
+                
+                // 2秒后隐藏并移除提示
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => {
+                        document.body.removeChild(toast);
+                    }, 300);
+                }, 2000);
+            }
+            
+            updateOwnership(lg_r, lg_c, mg_r, mg_c, sg_r, sg_c) {
+                this.updateSmallOwnership();
+                this.updateMediumOwnership();
+                this.updateLargeOwnership();
+            }
+            
+            updateSmallOwnership() {
+                for (let lg_r = 0; lg_r < this.LARGE_GRID; lg_r++) {
+                    for (let lg_c = 0; lg_c < this.LARGE_GRID; lg_c++) {
+                        for (let mg_r = 0; mg_r < this.MEDIUM_GRID; mg_r++) {
+                            for (let mg_c = 0; mg_c < this.MEDIUM_GRID; mg_c++) {
+                                const start_row = lg_r * 9 + mg_r * 3;
+                                const start_col = lg_c * 9 + mg_c * 3;
+                                
+                                let black_win = false;
+                                let white_win = false;
+                                
+                                // 检查行
+                                for (let r = 0; r < 3; r++) {
+                                    const row_black = [0, 1, 2].every(c => this.board[start_row + r][start_col + c] === 1);
+                                    const row_white = [0, 1, 2].every(c => this.board[start_row + r][start_col + c] === 2);
+                                    if (row_black) black_win = true;
+                                    if (row_white) white_win = true;
+                                }
+                                
+                                // 检查列
+                                for (let c = 0; c < 3; c++) {
+                                    const col_black = [0, 1, 2].every(r => this.board[start_row + r][start_col + c] === 1);
+                                    const col_white = [0, 1, 2].every(r => this.board[start_row + r][start_col + c] === 2);
+                                    if (col_black) black_win = true;
+                                    if (col_white) white_win = true;
+                                }
+                                
+                                // 检查对角线
+                                const diag1_black = [0, 1, 2].every(i => this.board[start_row + i][start_col + i] === 1);
+                                const diag1_white = [0, 1, 2].every(i => this.board[start_row + i][start_col + i] === 2);
+                                const diag2_black = [0, 1, 2].every(i => this.board[start_row + i][start_col + 2 - i] === 1);
+                                const diag2_white = [0, 1, 2].every(i => this.board[start_row + i][start_col + 2 - i] === 2);
+                                
+                                if (diag1_black || diag2_black) black_win = true;
+                                if (diag1_white || diag2_white) white_win = true;
+                                
+                                if (black_win && white_win) {
+                                    this.small_owner[lg_r * 3 + lg_c][mg_r][mg_c] = 3;
+                                } else if (black_win) {
+                                    this.small_owner[lg_r * 3 + lg_c][mg_r][mg_c] = 1;
+                                } else if (white_win) {
+                                    this.small_owner[lg_r * 3 + lg_c][mg_r][mg_c] = 2;
+                                } else {
+                                    this.small_owner[lg_r * 3 + lg_c][mg_r][mg_c] = 0;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            updateMediumOwnership() {
+                for (let lg_r = 0; lg_r < this.LARGE_GRID; lg_r++) {
+                    for (let lg_c = 0; lg_c < this.LARGE_GRID; lg_c++) {
+                        const small_grids = [];
+                        for (let mg_r = 0; mg_r < this.MEDIUM_GRID; mg_r++) {
+                            for (let mg_c = 0; mg_c < this.MEDIUM_GRID; mg_c++) {
+                                small_grids.push(this.small_owner[lg_r * 3 + lg_c][mg_r][mg_c]);
+                            }
+                        }
+                        
+                        let black_win = false;
+                        let white_win = false;
+                        
+                        // 检查行
+                        for (let r = 0; r < 3; r++) {
+                            const idx = r * 3;
+                            if ([0, 1, 2].every(c => [1, 3].includes(small_grids[idx + c]))) {
+                                black_win = true;
+                            }
+                            if ([0, 1, 2].every(c => [2, 3].includes(small_grids[idx + c]))) {
+                                white_win = true;
+                            }
+                        }
+                        
+                        // 检查列
+                        for (let c = 0; c < 3; c++) {
+                            if ([0, 1, 2].every(r => [1, 3].includes(small_grids[r * 3 + c]))) {
+                                black_win = true;
+                            }
+                            if ([0, 1, 2].every(r => [2, 3].includes(small_grids[r * 3 + c]))) {
+                                white_win = true;
+                            }
+                        }
+                        
+                        // 检查对角线
+                        if ([0, 1, 2].every(i => [1, 3].includes(small_grids[i * 3 + i]))) {
+                            black_win = true;
+                        }
+                        if ([0, 1, 2].every(i => [2, 3].includes(small_grids[i * 3 + i]))) {
+                            white_win = true;
+                        }
+                        if ([0, 1, 2].every(i => [1, 3].includes(small_grids[i * 3 + (2 - i)]))) {
+                            black_win = true;
+                        }
+                        if ([0, 1, 2].every(i => [2, 3].includes(small_grids[i * 3 + (2 - i)]))) {
+                            white_win = true;
+                        }
+                        
+                        if (black_win && white_win) {
+                            this.medium_owner[lg_r][lg_c] = 3;
+                        } else if (black_win) {
+                            this.medium_owner[lg_r][lg_c] = 1;
+                        } else if (white_win) {
+                            this.medium_owner[lg_r][lg_c] = 2;
+                        } else {
+                            this.medium_owner[lg_r][lg_c] = 0;
+                        }
+                    }
+                }
+            }
+            
+            updateLargeOwnership() {
+                for (let lg_r = 0; lg_r < this.LARGE_GRID; lg_r++) {
+                    for (let lg_c = 0; lg_c < this.LARGE_GRID; lg_c++) {
+                        let black_win = false;
+                        let white_win = false;
+                        
+                        // 检查行
+                        for (let r = 0; r < 3; r++) {
+                            if ([0, 1, 2].every(c => [1, 3].includes(this.medium_owner[r][c]))) {
+                                black_win = true;
+                            }
+                            if ([0, 1, 2].every(c => [2, 3].includes(this.medium_owner[r][c]))) {
+                                white_win = true;
+                            }
+                        }
+                        
+                        // 检查列
+                        for (let c = 0; c < 3; c++) {
+                            if ([0, 1, 2].every(r => [1, 3].includes(this.medium_owner[r][c]))) {
+                                black_win = true;
+                            }
+                            if ([0, 1, 2].every(r => [2, 3].includes(this.medium_owner[r][c]))) {
+                                white_win = true;
+                            }
+                        }
+                        
+                        // 检查对角线
+                        if ([0, 1, 2].every(i => [1, 3].includes(this.medium_owner[i][i]))) {
+                            black_win = true;
+                        }
+                        if ([0, 1, 2].every(i => [2, 3].includes(this.medium_owner[i][i]))) {
+                            white_win = true;
+                        }
+                        if ([0, 1, 2].every(i => [1, 3].includes(this.medium_owner[i][2 - i]))) {
+                            black_win = true;
+                        }
+                        if ([0, 1, 2].every(i => [2, 3].includes(this.medium_owner[i][2 - i]))) {
+                            white_win = true;
+                        }
+                        
+                        if (black_win && white_win) {
+                            this.large_owner[lg_r][lg_c] = 3;
+                        } else if (black_win) {
+                            this.large_owner[lg_r][lg_c] = 1;
+                        } else if (white_win) {
+                            this.large_owner[lg_r][lg_c] = 2;
+                        } else {
+                            this.large_owner[lg_r][lg_c] = 0;
+                        }
+                    }
+                }
+            }
+            
+            checkVictory() {
+                const lines = [
+                    [[0, 0], [0, 1], [0, 2]],
+                    [[1, 0], [1, 1], [1, 2]],
+                    [[2, 0], [2, 1], [2, 2]],
+                    [[0, 0], [1, 0], [2, 0]],
+                    [[0, 1], [1, 1], [2, 1]],
+                    [[0, 2], [1, 2], [2, 2]],
+                    [[0, 0], [1, 1], [2, 2]],
+                    [[0, 2], [1, 1], [2, 0]]
+                ];
+                
+                for (const line of lines) {
+                    const values = line.map(([r, c]) => this.large_owner[r][c]);
+                    if (values.every(v => [1, 3].includes(v))) {
+                        return 1;
+                    }
+                    if (values.every(v => [2, 3].includes(v))) {
+                        return 2;
+                    }
+                }
+                return 0;
+            }
+            
+            onMouseMove(event) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                
+                const col = Math.floor(x / this.cell_size);
+                const row = Math.floor(y / this.cell_size);
+                
+                if (row >= 0 && row < this.BOARD_SIZE && col >= 0 && col < this.BOARD_SIZE) {
+                    const [lg_r, lg_c, mg_r, mg_c, sg_r, sg_c] = this.getNestedCoords(row, col);
+                    this.coordinateDisplay.textContent = 
+                        `坐标: (${lg_r+1},${lg_c+1})-(${mg_r+1},${mg_c+1})-(${sg_r+1},${sg_c+1})`;
+                } else {
+                    this.coordinateDisplay.textContent = "触摸或悬停显示坐标";
+                }
+            }
+            
+            updatePlayerInfo() {
+                let playerText = '';
+                let playerClass = '';
+                
+                if (this.game_mode === 'pvp') {
+                    playerText = this.current_player === 1 ? "黑棋 ●" : "白棋 ○";
+                    playerClass = this.current_player === 1 ? 'black' : 'white';
+                } else {
+                    if (this.current_player === this.ai_player) {
+                        playerText = "AI (白棋) ○";
+                        playerClass = 'ai';
+                    } else {
+                        playerText = "玩家 (黑棋) ●";
+                        playerClass = 'black';
+                    }
+                }
+                
+                this.playerInfo.textContent = `当前玩家: ${playerText}`;
+                this.playerInfo.className = `player-info ${playerClass}`;
+                
+                if (this.last_move) {
+                    const [lg_r, lg_c, mg_r, mg_c, sg_r, sg_c] = this.last_move;
+                    this.regionInfo.textContent = 
+                        `可落子区域: (${mg_r+1},${mg_c+1})-(${sg_r+1},${sg_c+1})-(x,y)`;
+                } else {
+                    this.regionInfo.textContent = "可落子区域: 全盘";
+                }
+            }
+            
+            updateStatusInfo() {
+                let small_black = 0, small_white = 0, small_both = 0;
+                let medium_black = 0, medium_white = 0, medium_both = 0;
+                let large_black = 0, large_white = 0, large_both = 0;
+                
+                for (let lg = 0; lg < this.LARGE_GRID * this.LARGE_GRID; lg++) {
+                    for (let mg_r = 0; mg_r < this.MEDIUM_GRID; mg_r++) {
+                        for (let mg_c = 0; mg_c < this.MEDIUM_GRID; mg_c++) {
+                            const owner = this.small_owner[lg][mg_r][mg_c];
+                            if (owner === 1) small_black++;
+                            else if (owner === 2) small_white++;
+                            else if (owner === 3) small_both++;
+                        }
+                    }
+                }
+                
+                for (let lg_r = 0; lg_r < this.LARGE_GRID; lg_r++) {
+                    for (let lg_c = 0; lg_c < this.LARGE_GRID; lg_c++) {
+                        const owner = this.medium_owner[lg_r][lg_c];
+                        if (owner === 1) medium_black++;
+                        else if (owner === 2) medium_white++;
+                        else if (owner === 3) medium_both++;
+                    }
+                }
+                
+                for (let lg_r = 0; lg_r < this.LARGE_GRID; lg_r++) {
+                    for (let lg_c = 0; lg_c < this.LARGE_GRID; lg_c++) {
+                        const owner = this.large_owner[lg_r][lg_c];
+                        if (owner === 1) large_black++;
+                        else if (owner === 2) large_white++;
+                        else if (owner === 3) large_both++;
+                    }
+                }
+                
+                this.smallBlack.textContent = small_black;
+                this.smallWhite.textContent = small_white;
+                this.smallBoth.textContent = small_both;
+                this.mediumBlack.textContent = medium_black;
+                this.mediumWhite.textContent = medium_white;
+                this.mediumBoth.textContent = medium_both;
+                this.largeBlack.textContent = large_black;
+                this.largeWhite.textContent = large_white;
+                this.largeBoth.textContent = large_both;
+            }
+            
+            toggleCoords() {
+                this.show_coords = !this.show_coords;
+                this.drawBoard();
+            }
+            
+            showGameOver(message) {
+                this.game_over = true;
+                document.getElementById('winnerText').textContent = message;
+                document.getElementById('gameOverModal').style.display = 'block';
+                this.playerInfo.textContent = `游戏结束! ${message}`;
+            }
+            
+            resetGame() {
+                this.board = this.createBoard();
+                this.small_owner = this.createSmallOwnerBoard();
+                this.medium_owner = this.createMediumOwnerBoard();
+                this.large_owner = this.createLargeOwnerBoard();
+                this.current_player = 1;
+                this.last_move = null;
+                this.game_over = false;
+                this.move_history = [];  // 清空历史记录
+                this.ai_thinking = false;
+                this.aiThinking.style.display = 'none';
+                
+                this.updatePlayerInfo();
+                this.drawBoard();
+                this.updateStatusInfo();
+                this.updateUndoButtonState();
+                document.getElementById('gameOverModal').style.display = 'none';
+                
+                // 人机对战模式下，如果是AI执黑，让AI先走
+                if (this.game_mode === 'pvai' && this.ai_player === 1 && !this.game_over) {
+                    setTimeout(() => this.aiMakeMove(), 1000);
+                }
+            }
+            
+            showRules() {
+                document.getElementById('rulesModal').style.display = 'block';
+            }
+            
+            hideRules() {
+                document.getElementById('rulesModal').style.display = 'none';
+            }
+        }
+        
+        // 初始化游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            new RecursiveTicTacToe();
+        });
+    </script>
+</body>
+</html>
